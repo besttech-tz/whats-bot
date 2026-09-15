@@ -1,0 +1,11 @@
+{
+  "name": "astra-3d-experience",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/serve.mjs dist 4173"
+  }
+}

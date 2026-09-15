@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#050505" />
+    <meta name="description" content="Astra — an interactive three-dimensional digital experience." />
+    <link rel="stylesheet" href="./src/style.css" />
+    <title>Astra — Digital Matter</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="scene" aria-hidden="true"></canvas>
+
+      <header class="nav">
+        <a class="brand" href="#home" aria-label="Astra home">
+          <span class="brand-mark"></span>
+          <span>ASTRA®</span>
+        </a>
+        <div class="nav-center">DIGITAL MATTER / 001</div>
+        <a class="menu" href="#contact"><span>Start a project</span><span class="menu-dot"></span></a>
+      </header>
+
+      <main>
+        <section class="hero panel is-active" id="home" data-scene="0">
+          <div class="eyebrow reveal"><span>01</span> Immersive digital studio</div>
+          <h1 class="display reveal">WE SHAPE<br /><em>DIGITAL</em> MATTER.</h1>
+          <div class="hero-footer reveal">
+            <p>Every idea begins as a signal. Scroll to follow its journey from raw energy into a world you can enter.</p>
+            <a class="circle-link" href="#manifesto" aria-label="Explore the experience">
+              <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 9v21m0 0-8-8m8 8 8-8" /></svg>
+            </a>
+          </div>
+          <div class="scroll-tag">SCROLL TO EXPLORE <span></span></div>
+        </section>
+
+        <section class="manifesto panel" id="manifesto" data-scene="1">
+          <div class="section-index">02 / 04</div>
+          <div class="manifesto-copy">
+            <p class="kicker">CHAPTER I — THE SIGNAL</p>
+            <h2>AN IDEA<br />AWAKENS.</h2>
+            <p class="body-copy">It starts quietly: a pulse in the dark. We give that first signal dimension, rhythm and a gravity of its own.</p>
+          </div>
+          <div class="orbit-label">DRAG TO DISTORT</div>
+        </section>
+
+        <section class="work panel" id="work" data-scene="2">
+          <div class="section-index">03 / 04</div>
+          <div class="work-card">
+            <span class="pill">CHAPTER II — THE FORM</span>
+            <h2>ENERGY<br /><i>becomes</i><br />MATTER.</h2>
+            <div class="work-meta">
+              <span>REAL-TIME 3D</span><span>CREATIVE CODE</span><span>2026</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="contact panel" id="contact" data-scene="3">
+          <div class="contact-wrap">
+            <p class="kicker">CHAPTER III — THE WORLD</p>
+            <h2>STEP INTO<br /><em>THE STORY.</em></h2>
+            <a class="cta" href="mailto:hello@astra.studio"><span>START A PROJECT</span><b>↗</b></a>
+          </div>
+          <footer>
+            <span>ASTRA STUDIO © 2026</span>
+            <span>BUILT FOR THE NEXT DIMENSION</span>
+          </footer>
+        </section>
+      </main>
+
+      <div class="progress" aria-hidden="true"><span></span></div>
+      <nav class="chapters" aria-label="Story chapters">
+        <a class="is-active" href="#home"><span>00</span><b>Origin</b></a>
+        <a href="#manifesto"><span>01</span><b>Signal</b></a>
+        <a href="#work"><span>02</span><b>Form</b></a>
+        <a href="#contact"><span>03</span><b>World</b></a>
+      </nav>
+      <div class="cursor" aria-hidden="true"></div>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
