@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/serve.mjs",
+    "dev": "python3 -m http.server 5173",
     "build": "node scripts/build.mjs",
-    "preview": "node scripts/serve.mjs dist 4173"
+    "preview": "python3 -m http.server 4173 -d dist"
   }
 }
