@@ -13,14 +13,14 @@ const dom = {
 };
 
 const capData = [
-  ['Immersive platforms and editorial worlds where concept, interface and motion operate as one expressive system.', 'STRATEGY · EXPERIENCE · INTERACTION'],
-  ['Useful, resilient products shaped around real behavior, clear priorities and an identity people remember.', 'PRODUCT LOGIC · UX/UI · FRONTEND'],
-  ['Performant spatial experiences built with procedural form, cinematic composition and direct manipulation.', 'WEBGL · GLSL · CREATIVE CODE'],
-  ['Technical prototypes and new interaction models that turn ambitious creative ideas into dependable tools.', 'PROTOTYPING · R&D · TOOLING'],
-  ['Purposeful intelligence embedded in workflows and interfaces—designed for clarity, control and trust.', 'AI UX · SYSTEM DESIGN · INTEGRATION'],
-  ['Flexible visual systems that express identity through time, behavior, type and responsive digital form.', 'DIRECTION · MOTION · IDENTITY'],
+  ['One possible expression of the pattern: immersive platforms where concept, interface and motion operate as one system.', 'STRATEGY · EXPERIENCE · INTERACTION'],
+  ['When the signal calls for utility, product logic, interface and engineering resolve together.', 'PRODUCT LOGIC · UX/UI · FRONTEND'],
+  ['When an idea needs space and depth, procedural form makes the experience explorable and responsive.', 'WEBGL · GLSL · CREATIVE CODE'],
+  ['When familiar interfaces are not enough, prototypes turn new behaviors into dependable tools.', 'PROTOTYPING · R&D · TOOLING'],
+  ['When intelligence adds real value, it enters with clear purpose, control and understandable behavior.', 'AI UX · SYSTEM DESIGN · INTEGRATION'],
+  ['When identity must move, type, time and interaction become parts of the same expressive language.', 'DIRECTION · MOTION · IDENTITY'],
 ];
-const lifeStages = ['ORIGIN / AWAKENING','SIGNAL / SEARCHING','CAPABILITY / READY','FORM / ALIGNING','WORK / PROVING','MANIFESTO / QUIET','METHOD / EVOLVING','SYSTEM / CONNECTED','PROOF / OPEN','LAB / RESPONSIVE','WORLD / ALIVE','FIELD / RESTING'];
+const lifeStages = ['ORIGIN / DORMANT','SIGNAL / RESPONDING','PATTERN / EMERGING','FORM / ORGANIZING','WORLDS / MULTIPLYING','PRINCIPLE / QUIET','METHOD / REVEALED','SYSTEM / CONNECTING','EVIDENCE / STABLE','WORLD / COMPLETE','FIELD / UNLOCKED','REST / IDLE'];
 const methodStates = ['RAW SIGNAL / OBSERVATION / 01','ALIGNMENT / DEFINITION / 02','VISIBLE STRUCTURE / DESIGN / 03','RESOLVED MATTER / BUILD / 04','ADAPTIVE SYSTEM / EVOLVE / 05'];
 let activeProject = 0;
 let activeCapability = 0;
