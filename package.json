@@ -3,9 +3,13 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "dev": "python3 -m http.server 5173",
+    "start": "node scripts/serve.mjs",
+    "dev": "node scripts/serve.mjs",
     "build": "node scripts/build.mjs",
-    "preview": "python3 -m http.server 4173 -d dist"
+    "preview": "node scripts/serve.mjs dist 4173"
   }
 }

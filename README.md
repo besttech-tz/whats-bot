@@ -6,15 +6,31 @@ sections.
 
 ## See it locally
 
-You need **Node.js** and **Python 3**. No package installation is required.
+You only need **Node.js**. Python and package installation are not required.
 
 ```bash
-cd /workspace/whats-bot
 npm run dev
 ```
 
 Then open **http://localhost:5173** in a WebGL-capable browser. Keep the terminal
 running while viewing the site. Stop the server with <kbd>Ctrl</kbd>+<kbd>C</kbd>.
+
+On Windows, run this command from Git Bash, PowerShell, Command Prompt, or the
+VS Code terminal after changing into the cloned `whats-bot` folder.
+
+### Windows: remove the old Python command
+
+If the terminal still says `python3 -m http.server`, a merge conflict kept the
+old `package.json`. Open `package.json` and keep the incoming scripts block that
+uses `node scripts/serve.mjs`; do not keep both versions. As an immediate
+alternative, the updated project can also be started with:
+
+```bash
+npm start
+```
+
+Both `npm start` and `npm run dev` use the included Node server and never invoke
+Python.
 
 > If the project is running on a remote machine or cloud workspace, expose or
 > forward port `5173`, then open the forwarded URL instead of `localhost`.
