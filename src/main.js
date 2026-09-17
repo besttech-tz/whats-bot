@@ -1,122 +1,174 @@
-const canvas = document.querySelector('#scene');
-const gl = canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'high-performance' });
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+const prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const isCoarsePointer = matchMedia('(pointer: coarse)');
+
+const dom = {
+  canvas: $('#scene'), loader: $('.loader'), progress: $('.progress span'), coordinate: $('[data-coordinate]'), cursor: $('.cursor'),
+  lifeStatus: $('[data-life-status]'), navContext: $('[data-nav-context]'), movements: $$('.movement'), chapters: $$('.chapters a'),
+  capabilities: $$('.capability'), capIndex: $('[data-cap-index]'), capCopy: $('[data-cap-copy]'), capMeta: $('[data-cap-meta]'),
+  projects: $$('.project'), projectCurrent: $('[data-project-current]'), methodSteps: $$('.method-step'), methodCurrent: $('[data-method-current]'),
+  methodState: $('[data-method-state]'), methodSection: $('.method'), workSection: $('.selected-work'), lab: $('.lab'), labTrigger: $('[data-lab-trigger]'),
+  energy: $('[data-energy]'), matter: $('[data-matter]'), menuToggle: $('.menu-toggle'), mobileMenu: $('.mobile-menu'),
+};
+
+const capData = [
+  ['Immersive platforms and editorial worlds where concept, interface and motion operate as one expressive system.', 'STRATEGY · EXPERIENCE · INTERACTION'],
+  ['Useful, resilient products shaped around real behavior, clear priorities and an identity people remember.', 'PRODUCT LOGIC · UX/UI · FRONTEND'],
+  ['Performant spatial experiences built with procedural form, cinematic composition and direct manipulation.', 'WEBGL · GLSL · CREATIVE CODE'],
+  ['Technical prototypes and new interaction models that turn ambitious creative ideas into dependable tools.', 'PROTOTYPING · R&D · TOOLING'],
+  ['Purposeful intelligence embedded in workflows and interfaces—designed for clarity, control and trust.', 'AI UX · SYSTEM DESIGN · INTEGRATION'],
+  ['Flexible visual systems that express identity through time, behavior, type and responsive digital form.', 'DIRECTION · MOTION · IDENTITY'],
+];
+const lifeStages = ['ORIGIN / AWAKENING','SIGNAL / SEARCHING','CAPABILITY / READY','FORM / ALIGNING','WORK / PROVING','MANIFESTO / QUIET','METHOD / EVOLVING','SYSTEM / CONNECTED','PROOF / OPEN','LAB / RESPONSIVE','WORLD / ALIVE','FIELD / RESTING'];
+const methodStates = ['RAW SIGNAL / OBSERVATION / 01','ALIGNMENT / DEFINITION / 02','VISIBLE STRUCTURE / DESIGN / 03','RESOLVED MATTER / BUILD / 04','ADAPTIVE SYSTEM / EVOLVE / 05'];
+let activeProject = 0;
+let activeCapability = 0;
+let labMatter = 0;
+let labHeld = false;
+let dragging = false;
+
+function setCapability(index) {
+  activeCapability = index;
+  dom.capabilities.forEach((item, i) => item.classList.toggle('is-active', i === index));
+  dom.capIndex.textContent = `CAP / ${String(index + 1).padStart(2, '0')}`;
+  dom.capCopy.textContent = capData[index][0];
+  dom.capMeta.textContent = capData[index][1];
+}
+dom.capabilities.forEach((item, index) => {
+  item.addEventListener('mouseenter', () => setCapability(index));
+  item.addEventListener('focus', () => setCapability(index));
+  item.addEventListener('click', () => setCapability(index));
+});
+
+function setProject(index) {
+  activeProject = (index + dom.projects.length) % dom.projects.length;
+  dom.projects.forEach((project, i) => project.classList.toggle('is-active', i === activeProject));
+  dom.projectCurrent.textContent = String(activeProject + 1).padStart(2, '0');
+}
+$('[data-project-prev]').addEventListener('click', () => setProject(activeProject - 1));
+$('[data-project-next]').addEventListener('click', () => setProject(activeProject + 1));
+
+function setLabHold(value) {
+  labHeld = value;
+  dom.labTrigger.classList.toggle('is-held', value);
+  dom.cursor.classList.toggle('is-dragging', value || dragging);
+}
+dom.labTrigger.addEventListener('pointerdown', (event) => { event.preventDefault(); setLabHold(true); dom.labTrigger.setPointerCapture(event.pointerId); });
+dom.labTrigger.addEventListener('pointerup', () => setLabHold(false));
+dom.labTrigger.addEventListener('pointercancel', () => setLabHold(false));
+dom.labTrigger.addEventListener('click', () => { labMatter = (labMatter + 1) % 3; dom.matter.textContent = ['FLUID','ELASTIC','CHARGED'][labMatter]; });
+
+dom.menuToggle.addEventListener('click', () => {
+  const open = !dom.mobileMenu.classList.contains('is-open');
+  dom.mobileMenu.classList.toggle('is-open', open); dom.menuToggle.setAttribute('aria-expanded', open); dom.mobileMenu.setAttribute('aria-hidden', !open);
+});
+
+$$('a[href^="#"]').forEach((link) => link.addEventListener('click', (event) => {
+  const target = $(link.getAttribute('href')); if (!target) return;
+  event.preventDefault(); dom.mobileMenu.classList.remove('is-open'); dom.menuToggle.setAttribute('aria-expanded', 'false');
+  target.scrollIntoView({ behavior: prefersReducedMotion.matches ? 'auto' : 'smooth' });
+}));
+
+$$('a, button').forEach((item) => {
+  item.addEventListener('mouseenter', () => dom.cursor.classList.add('is-interactive'));
+  item.addEventListener('mouseleave', () => dom.cursor.classList.remove('is-interactive'));
+});
+$$('.magnetic').forEach((item) => {
+  item.addEventListener('pointermove', (event) => { if (isCoarsePointer.matches || prefersReducedMotion.matches) return; const rect = item.getBoundingClientRect(); item.style.transform = `translate(${(event.clientX - rect.left - rect.width / 2) * .12}px, ${(event.clientY - rect.top - rect.height / 2) * .12}px)`; });
+  item.addEventListener('pointerleave', () => { item.style.transform = ''; });
+});
+
+const activeObserver = new IntersectionObserver((entries) => entries.forEach((entry) => {
+  if (!entry.isIntersecting) return;
+  const index = dom.movements.indexOf(entry.target);
+  dom.movements.forEach((item) => item.classList.toggle('is-active', item === entry.target));
+  dom.chapters.forEach((link, i) => link.classList.toggle('is-active', i === index));
+  dom.lifeStatus.textContent = lifeStages[index] ?? lifeStages.at(-1);
+  dom.navContext.textContent = entry.target.dataset.title ?? 'ASTRA';
+}), { rootMargin: '-38% 0px -38% 0px', threshold: 0 });
+dom.movements.forEach((item) => activeObserver.observe(item));
+
+const gl = dom.canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'high-performance' });
 if (!gl) document.body.classList.add('no-webgl');
 
-const vertex = `attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
-const fragment = `
-precision highp float;
-uniform vec2 r;
-uniform float t;
-uniform float s;
-uniform float v;
-uniform vec2 m;
-#define PI 3.14159265
+let renderScene = () => {};
+let resizeScene = () => {};
+let sceneState = { scroll: 0, velocity: 0, mouse: [0, 0], interaction: 0, chapter: 0 };
 
+if (gl) {
+  const vertex = `attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
+  const fragment = `
+precision highp float;
+uniform vec2 r; uniform float t; uniform float s; uniform float v; uniform vec2 m; uniform float c; uniform float interact; uniform float quality;
+#define PI 3.14159265
 float hash(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
 float noise(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1)),f.x),f.y),f.z);}
-mat2 rot(float a){float c=cos(a),q=sin(a);return mat2(c,-q,q,c);}
-float smin(float a,float b,float k){float h=clamp(.5+.5*(b-a)/k,0.,1.);return mix(b,a,h)-k*h*(1.-h);}
+mat2 rot(float a){float x=cos(a),y=sin(a);return mat2(x,-y,y,x);} float smin(float a,float b,float k){float h=clamp(.5+.5*(b-a)/k,0.,1.);return mix(b,a,h)-k*h*(1.-h);}
+float capsule(vec3 p,vec3 a,vec3 b,float radius){vec3 pa=p-a,ba=b-a;float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);return length(pa-ba*h)-radius;}
 float map(vec3 p){
-  vec3 q=p;
-  q.xz*=rot(s*8.2+m.x*.32+t*.11);q.xy*=rot(s*-3.5+m.y*.24+sin(t*.3)*.12);
-  float chapter=s*4.;
-  float breathing=.055*sin(t*1.4+chapter*2.);
-  float n=noise(q*(2.2+sin(chapter)*.7)+t*.2)+.45*noise(q*5.-t*.16);
-  q.y+=sin(q.x*2.4+t+chapter)*(.04+.09*smoothstep(.7,2.2,chapter));
-  float radius=1.3+breathing+n*(.13+.08*sin(chapter*PI*.5));
-  float core=length(q)-radius;
-  float division=smoothstep(.32,.58,s)*(1.-smoothstep(.86,1.,s));
-  float drift=.18*sin(t*.8+chapter);
-  vec3 splitAxis=normalize(vec3(cos(t*.24),.35*sin(t*.31),sin(t*.24)));
-  vec3 splitSide=normalize(cross(splitAxis,vec3(.1,1.,.2)));
-  float childA=length(q-splitAxis*(division*(1.28+drift)))-radius*(.64+.05*sin(t*1.3));
-  float childB=length(q+splitAxis*(division*(1.2-drift))+splitSide*division*.48)-radius*(.57+.04*cos(t));
-  float divided=smin(core,childA,.18);divided=smin(divided,childB,.16);
-  float body=mix(core,divided,smoothstep(.02,.3,division));
-  vec3 o1=vec3(cos(t*.7+chapter)*2.15,sin(t*.9)*.65,sin(t*.7+chapter)*.75);
-  vec3 o2=vec3(cos(-t*.45+1.7)*2.55,sin(t*.55+2.)*.9,sin(-t*.45)*.55);
-  vec3 o3=vec3(cos(t*.32+4.)*1.9,sin(t*.7+4.)*1.45,sin(t*.4)*.8);
-  float satellites=min(length(p-o1)-(.13+.035*sin(t*2.)),min(length(p-o2)-.09,length(p-o3)-.07));
-  return smin(body,satellites,.12);
+  vec3 q=p; float chapter=c; float method=smoothstep(5.3,7.2,chapter); float lab=smoothstep(8.5,9.3,chapter)*(1.-smoothstep(10.,10.7,chapter));
+  q.xz*=rot(s*7.8+m.x*(.2+interact*.45)+t*.075); q.xy*=rot(s*-2.8+m.y*.2+sin(t*.23)*.1);
+  float breathing=.04*sin(t*1.25+chapter)+.035*interact*sin(t*3.); float n=noise(q*(2.15+method*.75)+t*.13)+.42*noise(q*5.1-t*.11);
+  float radius=1.22+breathing+n*(.115+lab*.12); float core=length(q)-radius;
+  float split=smoothstep(2.8,4.2,chapter)*(1.-smoothstep(5.1,6.,chapter)); split=max(split,smoothstep(6.,7.,chapter)*.6);
+  vec3 axis=normalize(vec3(cos(t*.19+chapter),.3*sin(t*.27),sin(t*.19+chapter))); vec3 side=normalize(cross(axis,vec3(.1,1.,.2)));
+  float childA=length(q-axis*split*(1.25+.15*sin(t*.6)))-radius*(.61+.04*sin(t)); float childB=length(q+axis*split*1.18+side*split*.45)-radius*.55;
+  float body=mix(core,smin(smin(core,childA,.2),childB,.17),smoothstep(.05,.55,split));
+  float structure=smoothstep(5.7,7.5,chapter); float filament=capsule(q,vec3(-1.8,-.7,.1),vec3(1.8,.65,-.15),.055+noise(q*3.)*.018);
+  filament=min(filament,capsule(q,vec3(-1.3,1.1,.3),vec3(1.5,-1.,-.2),.038)); body=smin(body,filament,.11*structure+.001);
+  vec3 o1=vec3(cos(t*.52+chapter)*2.1,sin(t*.67)*.62,sin(t*.52+chapter)*.7); vec3 o2=vec3(cos(-t*.35+1.7)*2.5,sin(t*.44+2.)*.9,sin(-t*.35)*.5); vec3 o3=vec3(cos(t*.25+4.)*1.9,sin(t*.52+4.)*1.35,sin(t*.32)*.75);
+  float satellites=min(length(p-o1)-.11,min(length(p-o2)-.075,length(p-o3)-.065)); return smin(body,satellites,.1);
 }
-vec3 normal(vec3 p){vec2 e=vec2(.002,0);return normalize(vec3(map(p+e.xyy)-map(p-e.xyy),map(p+e.yxy)-map(p-e.yxy),map(p+e.yyx)-map(p-e.yyx)));}
+vec3 normal(vec3 p){vec2 e=vec2(.0025,0);return normalize(vec3(map(p+e.xyy)-map(p-e.xyy),map(p+e.yxy)-map(p-e.yxy),map(p+e.yyx)-map(p-e.yyx)));}
 void main(){
-  vec2 uv=(gl_FragCoord.xy*2.-r)/r.y;
-  vec2 screenUv=uv;
-  float phase=s*PI*4.+t*.035;
-  vec2 shift=vec2(.58*cos(phase),.13*sin(phase*1.7));
-  shift*=1.-smoothstep(.82,1.,s);
-  uv-=shift;
-  uv*=rot(.045*sin(phase)+v*.018);
-  vec3 ro=vec3(m.x*.1+sin(t*.18+s*8.)*.08,m.y*.1+cos(t*.15+s*5.)*.06,4.9-.48*sin(s*PI));
-  vec3 rd=normalize(vec3(uv,-2.25));
-  float d=0.,hit=0.;vec3 p;
-  for(int i=0;i<72;i++){p=ro+rd*d;float h=map(p);if(h<.002){hit=1.;break;}d+=h;if(d>9.)break;}
-  vec3 lime=vec3(.55,.72,.12),blue=vec3(.2,.38,1.),pink=vec3(.92,.2,.58),gold=vec3(1.,.48,.08);
-  vec3 chapterColor=mix(lime,blue,smoothstep(.16,.42,s));
-  chapterColor=mix(chapterColor,pink,smoothstep(.48,.72,s));
-  chapterColor=mix(chapterColor,gold,smoothstep(.78,1.,s));
-  float skyNoise=noise(vec3(screenUv*1.3,t*.025+s*2.));
-  float aurora=pow(max(0.,sin(screenUv.x*2.2+skyNoise*2.8+t*.12)-screenUv.y*.45),6.);
-  vec3 col=vec3(.012,.013,.011)+chapterColor*aurora*.07;
-  if(rd.y<-.03){
-    float floorDistance=(-1.72-ro.y)/rd.y;
-    if(floorDistance>0.){
-      vec3 fp=ro+rd*floorDistance;
-      float wave=noise(vec3(fp.xz*.48,t*.16));
-      vec2 grid=abs(fract(fp.xz*.42+wave*.08)-.5);
-      float line=1.-smoothstep(.018,.038,min(grid.x,grid.y));
-      float fade=exp(-floorDistance*.22)*(1.-hit);
-      col+=chapterColor*(line*.055+wave*.018)*fade;
-    }
-  }
-  if(hit>0.){
-    vec3 n=normal(p), l=normalize(vec3(-2.8,3.5,3.));
-    float dif=max(dot(n,l),0.);
-    float rim=pow(1.-max(dot(n,-rd),0.),2.3);
-    float spec=pow(max(dot(reflect(-l,n),-rd),0.),42.);
-    col=vec3(.04,.045,.035)+dif*vec3(.14,.15,.1)+rim*chapterColor*(1.+v*.025)+spec*vec3(.9);
-    col+=noise(p*7.)*.035;
-  }
-  float ring=abs(length(uv*vec2(1.,2.45))-2.0-v*.003);
-  col+=chapterColor*smoothstep(.014,0.,ring)*(.2+.15*sin(t));
-  vec2 drifting=gl_FragCoord.xy+vec2(t*10.,-t*4.);
-  float stars=step(.9968,hash(vec3(floor(drifting/2.),floor(t*.08))))*(.3+.35*sin(t+uv.x*20.));
-  col+=stars*vec3(.7,.75,.62)*(1.-hit);
-  float halo=.025/max(.02,abs(length(uv)-.68-sin(t*.5)*.025));
-  col+=chapterColor*halo*.045*(1.-hit);
-  float tunnel=abs(sin(length(screenUv)*24.-t*1.1-s*18.));
-  col+=chapterColor*pow(1.-tunnel,18.)*.035*(.35+v*.06)*(1.-hit);
-  col*=1.-.28*length(uv);
-  col=pow(col,vec3(.82));
-  gl_FragColor=vec4(col,1.);
+  vec2 screen=(gl_FragCoord.xy*2.-r)/r.y,uv=screen; float phase=s*PI*3.+t*.025; float scene=c/11.;
+  vec2 cameraOffset=vec2(.43*sin(scene*PI*3.2),.12*cos(scene*PI*4.)); cameraOffset+=vec2(m.x,m.y)*.055; cameraOffset*=1.-smoothstep(9.8,11.,c); uv-=cameraOffset;
+  uv*=1.+.12*sin(scene*PI*2.)-.08*smoothstep(9.5,11.,c); uv*=rot(.035*sin(phase)+v*.01);
+  float cameraZ=4.8-.38*sin(scene*PI)+.45*smoothstep(9.4,11.,c); vec3 ro=vec3(.08*m.x,.07*m.y,cameraZ); vec3 rd=normalize(vec3(uv,-2.25));
+  float d=0.,hit=0.;vec3 p=ro; for(int i=0;i<72;i++){if(float(i)>quality)break;p=ro+rd*d;float h=map(p);if(h<.0025){hit=1.;break;}d+=h*.88;if(d>9.)break;}
+  vec3 lime=vec3(.55,.72,.12),blue=vec3(.2,.38,1.),pink=vec3(.92,.2,.58),gold=vec3(1.,.48,.08); vec3 chapterColor=mix(lime,blue,smoothstep(1.,3.5,c)); chapterColor=mix(chapterColor,pink,smoothstep(3.8,6.5,c)); chapterColor=mix(chapterColor,lime,smoothstep(7.,9.,c)); chapterColor=mix(chapterColor,gold,smoothstep(9.7,11.,c));
+  float sky=noise(vec3(screen*1.2,t*.018+scene)); float aurora=pow(max(0.,sin(screen.x*2.1+sky*2.8+t*.09)-screen.y*.5),7.); vec3 col=vec3(.012,.013,.011)+chapterColor*aurora*.055;
+  if(rd.y<-.035){float fd=(-1.68-ro.y)/rd.y;if(fd>0.){vec3 fp=ro+rd*fd;float wave=noise(vec3(fp.xz*.44,t*.1));vec2 grid=abs(fract(fp.xz*.38+wave*.06)-.5);float line=1.-smoothstep(.015,.035,min(grid.x,grid.y));float fade=exp(-fd*.25)*(1.-hit);col+=chapterColor*(line*.042+wave*.014)*fade;}}
+  if(hit>0.){vec3 n=normal(p),l1=normalize(vec3(-2.8,3.5,3.)),l2=normalize(vec3(2.,-1.,2.));float dif=max(dot(n,l1),0.)+.2*max(dot(n,l2),0.);float rim=pow(1.-max(dot(n,-rd),0.),2.1);float spec=pow(max(dot(reflect(-l1,n),-rd),0.),32.-interact*10.);float rough=noise(p*(6.+scene*2.));col=vec3(.035,.041,.03)+dif*vec3(.13,.14,.09)+rim*chapterColor*(1.05+interact*.4)+spec*vec3(.9)*(1.-rough*.3);col+=rough*.03;}
+  float ring=abs(length(uv*vec2(1.,2.4))-2.-v*.002);col+=chapterColor*smoothstep(.014,0.,ring)*(.12+.08*sin(t));float starDensity=mix(.9974,.9984,step(0.5,quality/60.));vec2 drift=gl_FragCoord.xy+vec2(t*5.,-t*2.);float stars=step(starDensity,hash(vec3(floor(drift/2.),floor(t*.05))))*(.25+.25*sin(t+uv.x*18.));col+=stars*vec3(.7,.75,.62)*(1.-hit);
+  float halo=.022/max(.025,abs(length(uv)-.68-sin(t*.4)*.018));col+=chapterColor*halo*.032*(1.-hit);float fog=1.-exp(-d*d*.012);col=mix(col,vec3(.008,.009,.008)+chapterColor*.012,fog*.52);col*=1.-.25*length(screen);col=pow(max(col,0.),vec3(.82));gl_FragColor=vec4(col,1.);
 }`;
-
-function shader(type, source) {
-  const item = gl.createShader(type); gl.shaderSource(item, source); gl.compileShader(item);
-  if (!gl.getShaderParameter(item, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(item));
-  return item;
+  function makeShader(type, source) { const item=gl.createShader(type); gl.shaderSource(item,source); gl.compileShader(item); if(!gl.getShaderParameter(item,gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(item)); return item; }
+  const program=gl.createProgram(); gl.attachShader(program,makeShader(gl.VERTEX_SHADER,vertex)); gl.attachShader(program,makeShader(gl.FRAGMENT_SHADER,fragment)); gl.linkProgram(program);
+  if(!gl.getProgramParameter(program,gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(program)); gl.useProgram(program);
+  const buffer=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buffer); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
+  const point=gl.getAttribLocation(program,'p'); gl.enableVertexAttribArray(point); gl.vertexAttribPointer(point,2,gl.FLOAT,false,0,0);
+  const names=['r','t','s','v','m','c','interact','quality']; const uniforms=Object.fromEntries(names.map(name=>[name,gl.getUniformLocation(program,name)]));
+  const cores=navigator.hardwareConcurrency||4; const memory=navigator.deviceMemory||4; const mobile=isCoarsePointer.matches; const tier=mobile||cores<=4||memory<=4?'low':cores>=8&&memory>=8?'high':'medium'; const dprCap={low:1,medium:1.2,high:1.45}[tier]; const marchSteps={low:52,medium:62,high:71}[tier];
+  resizeScene=()=>{const scale=Math.min(devicePixelRatio||1,dprCap);dom.canvas.width=Math.round(innerWidth*scale);dom.canvas.height=Math.round(innerHeight*scale);dom.canvas.style.width=`${innerWidth}px`;dom.canvas.style.height=`${innerHeight}px`;gl.viewport(0,0,dom.canvas.width,dom.canvas.height);};
+  renderScene=(seconds)=>{gl.uniform2f(uniforms.r,dom.canvas.width,dom.canvas.height);gl.uniform1f(uniforms.t,seconds);gl.uniform1f(uniforms.s,sceneState.scroll);gl.uniform1f(uniforms.v,Math.min(sceneState.velocity,8));gl.uniform2f(uniforms.m,...sceneState.mouse);gl.uniform1f(uniforms.c,sceneState.chapter+activeCapability*.035+activeProject*.025);gl.uniform1f(uniforms.interact,sceneState.interaction);gl.uniform1f(uniforms.quality,marchSteps);gl.drawArrays(gl.TRIANGLES,0,6);};
+  resizeScene(); addEventListener('resize',resizeScene,{passive:true});
 }
-const program = gl.createProgram();
-gl.attachShader(program, shader(gl.VERTEX_SHADER, vertex));
-gl.attachShader(program, shader(gl.FRAGMENT_SHADER, fragment));
-gl.linkProgram(program); gl.useProgram(program);
-const buffer=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
-gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
-const point=gl.getAttribLocation(program,'p');gl.enableVertexAttribArray(point);gl.vertexAttribPointer(point,2,gl.FLOAT,false,0,0);
-const uniforms={r:gl.getUniformLocation(program,'r'),t:gl.getUniformLocation(program,'t'),s:gl.getUniformLocation(program,'s'),v:gl.getUniformLocation(program,'v'),m:gl.getUniformLocation(program,'m')};
 
-let scroll=0, scrollTarget=0, scrollVelocity=0, mouse=[0,0], mouseTarget=[0,0];
-function size(){const scale=Math.min(devicePixelRatio,1.35);canvas.width=innerWidth*scale;canvas.height=innerHeight*scale;canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';gl.viewport(0,0,canvas.width,canvas.height);}
-function updateScroll(){const max=document.documentElement.scrollHeight-innerHeight;scrollTarget=max?scrollY/max:0;}
-addEventListener('resize',size);addEventListener('scroll',updateScroll,{passive:true});
-addEventListener('pointermove',e=>{mouseTarget=[e.clientX/innerWidth*2-1,1-e.clientY/innerHeight*2];const c=document.querySelector('.cursor');c.style.left=e.clientX+'px';c.style.top=e.clientY+'px';});
-document.querySelectorAll('a[href^="#"]').forEach(link=>link.addEventListener('click',event=>{const target=document.querySelector(link.getAttribute('href'));if(!target)return;event.preventDefault();target.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}));
-const panels=[...document.querySelectorAll('.panel')], chapterLinks=[...document.querySelectorAll('.chapters a')];
-const lifeStatus=document.querySelector('[data-life-status]');
-const lifeStages=['ORIGIN / AWAKENING','SIGNAL / SEARCHING','FORM / EVOLVING','MULTIPLICITY / DIVIDING','WORLD / ALIVE'];
-const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(!entry.isIntersecting)return;panels.forEach(panel=>panel.classList.toggle('is-active',panel===entry.target));chapterLinks.forEach((link,index)=>link.classList.toggle('is-active',panels[index]===entry.target));lifeStatus.textContent=lifeStages[panels.indexOf(entry.target)];}),{threshold:.48});
-panels.forEach(panel=>observer.observe(panel));
-size();updateScroll();
-const start=performance.now();
-function frame(now){const previous=scroll;scroll+=(scrollTarget-scroll)*.065;scrollVelocity+=(Math.abs(scroll-previous)*850-scrollVelocity)*.08;mouse[0]+=(mouseTarget[0]-mouse[0])*.055;mouse[1]+=(mouseTarget[1]-mouse[1])*.055;document.querySelector('.progress span').style.height=`${scroll*100}%`;document.querySelector('[data-coordinate]').textContent=(scroll*100).toFixed(3);gl.uniform2f(uniforms.r,canvas.width,canvas.height);gl.uniform1f(uniforms.t,(now-start)/1000);gl.uniform1f(uniforms.s,scroll);gl.uniform1f(uniforms.v,Math.min(scrollVelocity,8));gl.uniform2f(uniforms.m,...mouse);gl.drawArrays(gl.TRIANGLES,0,6);requestAnimationFrame(frame);}requestAnimationFrame(frame);
+let scrollTarget=0, pointerTarget=[0,0], interactionTarget=0, chapterTarget=0, lastScroll=scrollY, visible=!document.hidden, rafId=0;
+function updateTargets(){
+  const max=document.documentElement.scrollHeight-innerHeight; scrollTarget=max?scrollY/max:0;
+  const center=innerHeight*.5; let nearest=0, distance=Infinity; dom.movements.forEach((section,index)=>{const rect=section.getBoundingClientRect();const d=Math.abs(rect.top+rect.height*.5-center);if(d<distance){distance=d;nearest=index;}}); chapterTarget=nearest;
+  if(dom.workSection){const rect=dom.workSection.getBoundingClientRect(),range=Math.max(1,rect.height-innerHeight);const local=Math.min(1,Math.max(0,-rect.top/range));if(local>.28)setProject(Math.min(2,Math.floor((local-.28)/.72*3)));}
+  if(dom.methodSection){const rect=dom.methodSection.getBoundingClientRect(),range=Math.max(1,rect.height-innerHeight);const local=Math.min(1,Math.max(0,-rect.top/range));const index=Math.min(4,Math.floor(local*5));dom.methodSteps.forEach((step,i)=>step.classList.toggle('is-active',i===index));dom.methodCurrent.textContent=String(index+1).padStart(2,'0');dom.methodState.textContent=methodStates[index];}
+}
+addEventListener('scroll',updateTargets,{passive:true});
+addEventListener('pointermove',(event)=>{pointerTarget=[event.clientX/innerWidth*2-1,1-event.clientY/innerHeight*2];dom.cursor.style.left=`${event.clientX}px`;dom.cursor.style.top=`${event.clientY}px`;if(dragging)interactionTarget=Math.min(1,interactionTarget+.05);});
+addEventListener('pointerdown',(event)=>{if(event.target.closest('a,button'))return;dragging=true;dom.cursor.classList.add('is-dragging');});
+addEventListener('pointerup',()=>{dragging=false;dom.cursor.classList.remove('is-dragging');});
+addEventListener('wheel',(event)=>{if(dom.lab.classList.contains('is-active'))interactionTarget=Math.min(1,interactionTarget+Math.abs(event.deltaY)*.0008);},{passive:true});
+
+document.addEventListener('visibilitychange',()=>{visible=!document.hidden;if(visible){lastTime=performance.now();rafId=requestAnimationFrame(frame);}else cancelAnimationFrame(rafId);});
+let lastTime=performance.now(), elapsed=0;
+function frame(now){
+  if(!visible)return; const delta=Math.min(.05,(now-lastTime)/1000);lastTime=now;elapsed+=delta*(prefersReducedMotion.matches?.15:1);
+  const previous=sceneState.scroll;sceneState.scroll+=(scrollTarget-sceneState.scroll)*(prefersReducedMotion.matches?1:.065);sceneState.velocity+=(Math.abs(sceneState.scroll-previous)*850-sceneState.velocity)*.08;
+  sceneState.mouse[0]+=(pointerTarget[0]-sceneState.mouse[0])*.055;sceneState.mouse[1]+=(pointerTarget[1]-sceneState.mouse[1])*.055;sceneState.chapter+=(chapterTarget-sceneState.chapter)*(prefersReducedMotion.matches?.4:.045);
+  interactionTarget=Math.max(labHeld?1:0,interactionTarget-.012);sceneState.interaction+=(interactionTarget-sceneState.interaction)*.09;
+  dom.progress.style.height=`${sceneState.scroll*100}%`;dom.coordinate.textContent=(sceneState.scroll*100).toFixed(3);dom.energy.textContent=(.42+sceneState.interaction*.58).toFixed(2);
+  renderScene(elapsed);rafId=requestAnimationFrame(frame);
+}
+updateTargets(); requestAnimationFrame(frame);
+addEventListener('load',()=>setTimeout(()=>dom.loader.classList.add('is-gone'),250));
+setTimeout(()=>dom.loader.classList.add('is-gone'),1600);
